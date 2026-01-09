@@ -1,4 +1,4 @@
-## Parquet Visualizator
+# Parquet Visualizator
 
 Une application de visualisation pour fichiers Parquet écrite en C# avec WPF.
 

@@ -40,4 +40,4 @@ Parquet Visualizator est une application de bureau permettant d'ouvrir et visual
 
 ## Licence
 
-Voir le fichier LICENSE.txt pour plus de détails.
+Voir le fichier [License](https://github.com/fredatgithub/ParquetVisualizator?tab=MIT-1-ov-file) pour plus de détails.

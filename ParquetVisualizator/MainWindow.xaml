@@ -1,0 +1,60 @@
+﻿<Window x:Class="ParquetVisualizator.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ParquetVisualizator"
+        mc:Ignorable="d"
+        Title="Parquet Visualizator" Height="600" Width="900"
+        WindowStartupLocation="CenterScreen">
+    <Grid Margin="10" Background="#E6F3FF">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- File Path Section -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,10">
+            <Label Content="Chemin du fichier :" FontWeight="Bold"/>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="textboxFilePath" Grid.Column="0" Height="25" Margin="0,0,5,0"
+                         TextChanged="textboxFilePath_TextChanged"/>
+                <Button x:Name="buttonBrowse" Grid.Column="1" Content="Parcourir..." 
+                        Width="80" Height="25" Click="buttonBrowse_Click"/>
+            </Grid>
+        </StackPanel>
+        
+        <!-- Convert to Parquet Button -->
+        <StackPanel Grid.Row="1" Margin="0,0,0,10">
+            <Button x:Name="buttonToParquetFile" Content="Convertir en Parquet" 
+                    Width="150" Height="30" HorizontalAlignment="Left"
+                    Click="buttonToParquetFile_Click"/>
+        </StackPanel>
+        
+        <!-- Result Section -->
+        <StackPanel Grid.Row="2">
+            <Label Content="Résultat :" FontWeight="Bold"/>
+            <TextBox x:Name="textboxResult" 
+                     TextWrapping="Wrap" 
+                     VerticalScrollBarVisibility="Auto" 
+                     HorizontalScrollBarVisibility="Auto"
+                     FontFamily="Consolas" 
+                     FontSize="12"
+                     Height="400"
+                     Background="AliceBlue"/>
+        </StackPanel>
+        
+        <!-- Status Bar -->
+        <StatusBar Grid.Row="3" Height="25">
+            <StatusBarItem>
+                <TextBlock x:Name="statusText" Text="Prêt"/>
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</Window>

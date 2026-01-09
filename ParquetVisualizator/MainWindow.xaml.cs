@@ -186,13 +186,6 @@ namespace ParquetVisualizator
           return;
         }
 
-        string extension = Path.GetExtension(filePath).ToLower();
-        if (extension != ".csv")
-        {
-          MessageBox.Show("Veuillez sélectionner un fichier CSV pour la conversion.", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
-          return;
-        }
-
         string parquetFilePath = Path.ChangeExtension(filePath, ".parquet");
 
         statusText.Text = "Conversion en cours...";

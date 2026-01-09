@@ -24,7 +24,7 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBox x:Name="textboxFilePath" Grid.Column="0" Height="25" Margin="0,0,5,0"
-                         TextChanged="textboxFilePath_TextChanged"/>
+                         TextChanged="TextboxFilePath_TextChanged"/>
                 <Button x:Name="buttonBrowse" Grid.Column="1" Content="Parcourir..." 
                         Width="80" Height="25" Click="buttonBrowse_Click"/>
             </Grid>
@@ -34,7 +34,7 @@
         <StackPanel Grid.Row="1" Margin="0,0,0,10">
             <Button x:Name="buttonToParquetFile" Content="Convertir en Parquet" 
                     Width="150" Height="30" HorizontalAlignment="Left"
-                    Click="buttonToParquetFile_Click"/>
+                    Click="ButtonToParquetFile_Click"/>
         </StackPanel>
         
         <!-- Result Section -->

@@ -26,15 +26,18 @@
                 <TextBox x:Name="textboxFilePath" Grid.Column="0" Height="25" Margin="0,0,5,0"
                          TextChanged="TextboxFilePath_TextChanged"/>
                 <Button x:Name="buttonBrowse" Grid.Column="1" Content="Parcourir..." 
-                        Width="80" Height="25" Click="buttonBrowse_Click"/>
+                        Width="80" Height="25" Click="ButtonBrowse_Click"/>
             </Grid>
         </StackPanel>
         
-        <!-- Convert to Parquet Button -->
-        <StackPanel Grid.Row="1" Margin="0,0,0,10">
+        <!-- Convert Buttons -->
+        <StackPanel Grid.Row="1" Margin="0,0,0,10" Orientation="Horizontal">
             <Button x:Name="buttonToParquetFile" Content="Convertir en Parquet" 
-                    Width="150" Height="30" HorizontalAlignment="Left"
+                    Width="150" Height="30" Margin="0,0,10,0"
                     Click="ButtonToParquetFile_Click"/>
+            <Button x:Name="buttonToCsvFile" Content="Convertir en CSV" 
+                    Width="150" Height="30"
+                    Click="ButtonToCsvFile_Click"/>
         </StackPanel>
         
         <!-- Result Section -->

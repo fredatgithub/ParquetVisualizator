@@ -46,7 +46,7 @@ namespace ParquetVisualizator
       }
     }
 
-    private void buttonBrowse_Click(object sender, RoutedEventArgs e)
+    private void ButtonBrowse_Click(object sender, RoutedEventArgs e)
     {
       OpenFileDialog openFileDialog = new OpenFileDialog
       {
@@ -89,9 +89,9 @@ namespace ParquetVisualizator
             break;
         }
       }
-      catch (Exception ex)
+      catch (Exception exception)
       {
-        textboxResult.Text = $"Erreur lors du chargement du fichier : {ex.Message}";
+        textboxResult.Text = $"Erreur lors du chargement du fichier : {exception.Message}";
         statusText.Text = "Erreur";
       }
     }
@@ -102,49 +102,45 @@ namespace ParquetVisualizator
 
       using (var stream = File.OpenRead(filePath))
       {
-        using (var reader = await ParquetReader.CreateAsync(stream))
+        using var reader = await ParquetReader.CreateAsync(stream);
+        result.AppendLine($"Fichier Parquet : {Path.GetFileName(filePath)}");
+        result.AppendLine($"Nombre de row groups : {reader.RowGroupCount}");
+        result.AppendLine();
+
+        for (int i = 0; i < reader.RowGroupCount; i++)
         {
-          result.AppendLine($"Fichier Parquet : {Path.GetFileName(filePath)}");
-          result.AppendLine($"Nombre de row groups : {reader.RowGroupCount}");
-          result.AppendLine();
+          using var rowGroupReader = reader.OpenRowGroupReader(i);
+          var fields = reader.Schema.GetDataFields();
+          var dataColumns = new Parquet.Data.DataColumn[fields.Length];
 
-          for (int i = 0; i < reader.RowGroupCount; i++)
+          for (int j = 0; j < fields.Length; j++)
           {
-            using (var rowGroupReader = reader.OpenRowGroupReader(i))
+            var field = (DataField)fields[j];
+            var columnData = await rowGroupReader.ReadColumnAsync(field);
+            dataColumns[j] = columnData;
+          }
+
+          if (i == 0)
+          {
+            var headers = fields.Select(f => f.Name);
+            result.AppendLine($"En-têtes : {string.Join(" | ", headers)}");
+            result.AppendLine(new string('-', headers.Count() * 15));
+          }
+
+          for (int row = 0; row < Math.Min(10, dataColumns[0].Data.Length); row++)
+          {
+            var rowData = new List<string>();
+            foreach (var column in dataColumns)
             {
-              var fields = reader.Schema.GetDataFields();
-              var dataColumns = new Parquet.Data.DataColumn[fields.Length];
-
-              for (int j = 0; j < fields.Length; j++)
-              {
-                var field = (DataField)fields[j];
-                var columnData = await rowGroupReader.ReadColumnAsync(field);
-                dataColumns[j] = columnData;
-              }
-
-              if (i == 0)
-              {
-                var headers = fields.Select(f => f.Name);
-                result.AppendLine($"En-têtes : {string.Join(" | ", headers)}");
-                result.AppendLine(new string('-', headers.Count() * 15));
-              }
-
-              for (int row = 0; row < Math.Min(10, dataColumns[0].Data.Length); row++)
-              {
-                var rowData = new List<string>();
-                foreach (var column in dataColumns)
-                {
-                  var value = column.Data.GetValue(row);
-                  rowData.Add(value?.ToString() ?? "NULL");
-                }
-                result.AppendLine(string.Join(" | ", rowData));
-              }
-
-              if (dataColumns[0].Data.Length > 10)
-              {
-                result.AppendLine($"... et {dataColumns[0].Data.Length - 10} autres lignes");
-              }
+              var value = column.Data.GetValue(row);
+              rowData.Add(value?.ToString() ?? "NULL");
             }
+            result.AppendLine(string.Join(" | ", rowData));
+          }
+
+          if (dataColumns[0].Data.Length > 10)
+          {
+            result.AppendLine($"... et {dataColumns[0].Data.Length - 10} autres lignes");
           }
         }
       }
@@ -266,6 +262,211 @@ namespace ParquetVisualizator
       {
         await rowGroupWriter.WriteColumnAsync(column);
       }
+    }
+
+    private async void ButtonToCsvFile_Click(object sender, RoutedEventArgs e)
+    {
+      try
+      {
+        string filePath = textboxFilePath.Text;
+
+        if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
+        {
+          MessageBox.Show("Veuillez sélectionner un fichier Parquet valide.", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
+          return;
+        }
+
+        string extension = Path.GetExtension(filePath).ToLower();
+        if (extension != ".parquet")
+        {
+          MessageBox.Show("Veuillez sélectionner un fichier Parquet pour la conversion.", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
+          return;
+        }
+
+        string csvFilePath = Path.ChangeExtension(filePath, ".csv");
+
+        statusText.Text = "Conversion en cours...";
+        await ConvertParquetToCsv(filePath, csvFilePath);
+
+        MessageBox.Show($"Fichier converti avec succès :\n{csvFilePath}", "Succès", MessageBoxButton.OK, MessageBoxImage.Information);
+        statusText.Text = "Conversion terminée";
+      }
+      catch (Exception exception)
+      {
+        MessageBox.Show($"Erreur lors de la conversion : {exception.Message}", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
+        statusText.Text = "Erreur de conversion";
+      }
+    }
+
+    private async Task ConvertParquetToCsv(string parquetFilePath, string csvFilePath)
+    {
+      var csvLines = new List<string>();
+
+      using (var stream = File.OpenRead(parquetFilePath))
+      {
+        using var reader = await ParquetReader.CreateAsync(stream);
+        var fields = reader.Schema.GetDataFields();
+        var headers = fields.Select(f => EscapeCsvValue(f.Name)).ToArray();
+        csvLines.Add(string.Join(",", headers));
+
+        for (int i = 0; i < reader.RowGroupCount; i++)
+        {
+          using var rowGroupReader = reader.OpenRowGroupReader(i);
+          var dataColumns = new Parquet.Data.DataColumn[fields.Length];
+
+          for (int j = 0; j < fields.Length; j++)
+          {
+            var field = (DataField)fields[j];
+            var columnData = await rowGroupReader.ReadColumnAsync(field);
+            dataColumns[j] = columnData;
+          }
+
+          int rowCount = dataColumns[0].Data.Length;
+
+          for (int row = 0; row < rowCount; row++)
+          {
+            var rowValues = new List<string>();
+            foreach (var column in dataColumns)
+            {
+              var value = column.Data.GetValue(row);
+              string csvValue = value?.ToString() ?? string.Empty;
+              rowValues.Add(EscapeCsvValue(csvValue));
+            }
+            csvLines.Add(string.Join(",", rowValues));
+          }
+        }
+      }
+
+      // Validation : vérifier que toutes les lignes sont des lignes CSV valides
+      ValidateCsvLines(csvLines);
+
+      File.WriteAllLines(csvFilePath, csvLines, Encoding.UTF8);
+    }
+
+    private string EscapeCsvValue(string value)
+    {
+      if (string.IsNullOrEmpty(value))
+        return string.Empty;
+
+      // Si la valeur contient une virgule, un guillemet ou un saut de ligne, elle doit être échappée
+      if (value.Contains(",") || value.Contains("\"") || value.Contains("\n") || value.Contains("\r"))
+      {
+        // Échapper les guillemets en les doublant
+        value = value.Replace("\"", "\"\"");
+        // Entourer de guillemets
+        return $"\"{value}\"";
+      }
+
+      return value;
+    }
+
+    private void ValidateCsvLines(List<string> csvLines)
+    {
+      if (csvLines.Count == 0)
+        throw new InvalidOperationException("Le fichier CSV généré est vide.");
+
+      int expectedColumnCount = -1;
+
+      for (int i = 0; i < csvLines.Count; i++)
+      {
+        var line = csvLines[i];
+        var columns = ParseCsvLine(line);
+
+        if (i == 0)
+        {
+          // Première ligne (en-têtes)
+          expectedColumnCount = columns.Count;
+          if (expectedColumnCount == 0)
+            throw new InvalidOperationException("La ligne d'en-tête CSV est vide.");
+        }
+        else
+        {
+          // Vérifier que le nombre de colonnes correspond
+          if (columns.Count != expectedColumnCount)
+          {
+            throw new InvalidOperationException(
+              $"La ligne {i + 1} contient {columns.Count} colonnes au lieu de {expectedColumnCount}. " +
+              $"Ligne : {line.Substring(0, Math.Min(100, line.Length))}...");
+          }
+        }
+
+        // Vérifier que la ligne n'est pas corrompue (guillemets non fermés, etc.)
+        if (!IsValidCsvLine(line))
+        {
+          throw new InvalidOperationException(
+            $"La ligne {i + 1} n'est pas une ligne CSV valide. " +
+            $"Ligne : {line.Substring(0, Math.Min(100, line.Length))}...");
+        }
+      }
+    }
+
+    private List<string> ParseCsvLine(string line)
+    {
+      var columns = new List<string>();
+      var currentColumn = new StringBuilder();
+      bool inQuotes = false;
+
+      for (int i = 0; i < line.Length; i++)
+      {
+        char c = line[i];
+
+        if (c == '"')
+        {
+          if (inQuotes && i + 1 < line.Length && line[i + 1] == '"')
+          {
+            // Guillemet échappé
+            currentColumn.Append('"');
+            i++; // Passer le guillemet suivant
+          }
+          else
+          {
+            // Basculer l'état des guillemets
+            inQuotes = !inQuotes;
+          }
+        }
+        else if (c == ',' && !inQuotes)
+        {
+          // Fin de colonne
+          columns.Add(currentColumn.ToString());
+          currentColumn.Clear();
+        }
+        else
+        {
+          currentColumn.Append(c);
+        }
+      }
+
+      // Ajouter la dernière colonne
+      columns.Add(currentColumn.ToString());
+
+      return columns;
+    }
+
+    private bool IsValidCsvLine(string line)
+    {
+      bool inQuotes = false;
+
+      for (int i = 0; i < line.Length; i++)
+      {
+        char c = line[i];
+
+        if (c == '"')
+        {
+          if (inQuotes && i + 1 < line.Length && line[i + 1] == '"')
+          {
+            // Guillemet échappé, passer le suivant
+            i++;
+          }
+          else
+          {
+            // Basculer l'état des guillemets
+            inQuotes = !inQuotes;
+          }
+        }
+      }
+
+      // La ligne est valide si tous les guillemets sont fermés
+      return !inQuotes;
     }
 
     protected override void OnClosed(EventArgs e)

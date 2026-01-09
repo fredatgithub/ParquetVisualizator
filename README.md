@@ -18,12 +18,18 @@ Parquet Visualizator est une application de bureau permettant d'ouvrir et visual
 - .NET Framework 4.8
 - Windows (application WPF)
 
-## Installation
+## Installation depuis le code source
 
 1. Clonez le dépôt ou téléchargez les sources
 2. Restaurez les dépendances NuGet
 3. Compilez la solution ParquetVisualizator.sln
 4. Exécutez l'application
+
+## Installation depuis les binaires
+
+1. Télécharger la dernière version depuis la section Releases
+2. Décompresser le fichier téléchargé dans un répertoire de votre choix
+3. Lancer l'exécutable ParquetVisualizator.exe
 
 ## Dépendances
 
